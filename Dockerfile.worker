@@ -1,0 +1,28 @@
+# Worker Dockerfile - Background job processor
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies (prevent model downloads during build)
+COPY requirements.txt .
+ENV TRANSFORMERS_OFFLINE=1
+ENV HF_HUB_OFFLINE=1
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY app/ ./app/
+
+# Create data directories
+RUN mkdir -p /app/data/repos /app/data/indexes
+
+# Set environment
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Default command - run worker
+CMD ["python", "-m", "app.worker.runner"]

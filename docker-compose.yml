@@ -1,0 +1,65 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: repo-intelligence-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: repo_intelligence
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: repo-intelligence-app
+    environment:
+      - APP_ENV=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/repo_intelligence
+      - STORAGE_PATH=/app/data
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY:-}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-me}
+    volumes:
+      - ./app:/app/app:ro
+      - ./data:/app/data
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: repo-intelligence-worker
+    environment:
+      - APP_ENV=development
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/repo_intelligence
+      - STORAGE_PATH=/app/data
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY:-}
+    volumes:
+      - ./app:/app/app:ro
+      - ./data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+

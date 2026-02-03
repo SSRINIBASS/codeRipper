@@ -20,9 +20,11 @@ COPY app/ ./app/
 # Create data directories
 RUN mkdir -p /app/data/repos /app/data/indexes
 
-# Set environment
+# Set environment (reset offline mode so models can download at runtime)
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV TRANSFORMERS_OFFLINE=
+ENV HF_HUB_OFFLINE=
 
 # Default command - run worker
 CMD ["python", "-m", "app.worker.runner"]

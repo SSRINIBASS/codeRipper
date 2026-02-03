@@ -115,23 +115,32 @@ async def execute_indexing(
         vector_store = VectorStore(repo.id)
         vector_store.create_index()
         
+        # Generate chunk records with pre-assigned IDs to avoid RETURNING issues
+        from uuid import uuid4
+        from sqlalchemy import insert
+        
+        chunk_records = []
         chunk_ids = []
         for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
-            # Create database record
-            db_chunk = CodeChunk(
-                repo_id=repo.id,
-                file_path=chunk.file_path,
-                start_line=chunk.start_line,
-                end_line=chunk.end_line,
-                symbol_type=chunk.symbol_type,
-                symbol_name=chunk.symbol_name,
-                language=chunk.language,
-                content=chunk.content,
-                token_count=chunk.token_count,
-                embedding_index=i,
-            )
-            db.add(db_chunk)
-            chunk_ids.append(db_chunk.id)
+            chunk_id = str(uuid4())
+            chunk_ids.append(chunk_id)
+            chunk_records.append({
+                "id": chunk_id,
+                "repo_id": repo.id,
+                "file_path": chunk.file_path,
+                "start_line": chunk.start_line,
+                "end_line": chunk.end_line,
+                "symbol_type": chunk.symbol_type,
+                "symbol_name": chunk.symbol_name,
+                "language": chunk.language,
+                "content": chunk.content,
+                "token_count": chunk.token_count,
+                "embedding_index": i,
+            })
+        
+        # Use raw insert to avoid RETURNING sentinel mismatch with asyncpg
+        if chunk_records:
+            await db.execute(insert(CodeChunk), chunk_records)
         
         await db.commit()
         

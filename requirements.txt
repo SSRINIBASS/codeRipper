@@ -1,3 +1,6 @@
+# Use CPU-only PyTorch to reduce image size (~300MB vs ~2GB)
+--extra-index-url https://download.pytorch.org/whl/cpu
+
 # Core dependencies
 fastapi==0.109.2
 uvicorn[standard]==0.27.1
@@ -13,11 +16,10 @@ alembic==1.13.1
 faiss-cpu==1.7.4
 numpy==1.26.4
 
-# LLM - Local embeddings + Hugging Face API (CPU-only torch to reduce image size)
+# LLM - Local embeddings + Hugging Face API
 sentence-transformers==2.3.1
 huggingface-hub==0.20.3
---index-url https://download.pytorch.org/whl/cpu
-torch==2.1.2
+torch==2.1.2+cpu
 
 # Git operations
 gitpython==3.1.42

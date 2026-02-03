@@ -216,6 +216,7 @@ Remember: Answer ONLY based on the code context above. Cite specific files and l
         content=question,
     )
     db.add(user_msg)
+    await db.flush()  # Flush individually to avoid asyncpg batch UUID issue
     
     assistant_msg = TutorMessage(
         session_id=session_id,

@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 import structlog
 
 from app.config import get_settings
-from app.database import async_session_maker, close_db, init_db
+from app.database import get_db_session, init_db
 from app.models import Job, JobStatus, JobType
 from app.services import get_pending_jobs, get_repository
 from app.services.documentation import execute_docs_generation
@@ -33,7 +33,7 @@ def shutdown_handler(signum, frame):
 
 async def process_job(job: Job) -> None:
     """Process a single job based on its type."""
-    async with async_session_maker() as db:
+    async with get_db_session() as db:
         try:
             # Refetch job and repo in this session to avoid detached instance errors
             from app.services import get_job
@@ -95,7 +95,7 @@ async def worker_loop(
                 continue
             
             # Fetch pending jobs
-            async with async_session_maker() as db:
+            async with get_db_session() as db:
                 jobs = await get_pending_jobs(
                     db, limit=max_concurrent - len(active_tasks)
                 )
